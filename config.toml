@@ -1,0 +1,57 @@
+# Settings for count.py, optimize.py and export.py.
+# Costs are effort units per keystroke. They are judgement calls, not measurements:
+# change them (or override one with --set section.key=value) and see which placements hold.
+
+[corpus]
+language = "python"   # python, javascript, typescript, c, cpp, java, csharp, go, rust, ruby
+counts = "results/counts.json"
+
+[counting]            # how much of each character a person actually keys
+comment = 0.6
+docstring = 0.4
+close_discount = 0.3       # closing ) ] } and closing quotes (editors auto-close them)
+autocomplete_after = 4     # identifier chars typed before autocomplete takes over
+autocomplete_factor = 0.3  # weight of identifier chars after that
+
+[layout]
+# Letters stay where the base layout has them: qwerty, dvorak, colemak-dh, programmer-dvorak.
+base = "programmer-dvorak"
+# "shifted": digits on Shift + the 1-0 keys, so the unshifted number row holds symbols.
+# "unshifted": digits where they normally are.
+digits = "shifted"
+# Layouts to compare against (they must keep the same letters and digits).
+# Leave it out to compare against every compatible layout.
+baselines = ["programmer-dvorak", "python-hand"]
+
+[cost]
+shift = 1.5          # extra cost of a shifted keystroke
+held_shift = 0.75    # refund when consecutive shifted chars use the same Shift key
+sfb = 2.5            # same finger, different key
+sfb_per_unit = 1.0   # ... plus this per key-width of travel
+row_jump = 0.6       # same hand, different fingers, per row skipped
+inward_roll = -0.3   # same hand and row, adjacent fingers moving toward the index
+alternation = -0.1   # hand switch
+redirect = 0.0       # one-hand trigram that changes direction (reported either way)
+
+[brackets]
+# Keep each pair learnable: "adjacent" (same row and layer, close right of open) or
+# "mirrored" (same row and layer, same finger on the other hand). pairs = [] turns it off.
+pairs = ["()", "[]", "{}"]
+allow = ["adjacent", "mirrored"]
+penalty = 1.0        # added to cost/key per pair that breaks the rule (1.0 = effectively a hard rule)
+
+[keyboard]
+# One entry per key in QWERTY rows: ` 1 .. = | q .. \ | a .. ' | z .. /
+# Fingers 0-3 = left pinky..index, 4-7 = right index..pinky (6 is on the left index here).
+fingers = [
+  [0, 0, 1, 2, 3, 3, 3, 4, 5, 6, 7, 7, 7],
+  [0, 1, 2, 3, 3, 4, 4, 5, 6, 7, 7, 7, 7],
+  [0, 1, 2, 3, 3, 4, 4, 5, 6, 7, 7],
+  [0, 1, 2, 3, 3, 4, 4, 5, 6, 7],
+]
+effort = [
+  [4.0, 3.4, 2.8, 2.5, 2.5, 3.0, 3.6, 2.5, 2.5, 2.8, 3.4, 3.8, 4.4],
+  [2.0, 1.5, 1.2, 1.2, 1.7, 1.9, 1.2, 1.2, 1.5, 2.0, 2.8, 3.6, 4.0],
+  [1.1, 1.0, 1.0, 1.0, 1.5, 1.5, 1.0, 1.0, 1.0, 1.1, 2.0],
+  [2.2, 1.9, 1.6, 1.5, 2.2, 1.5, 1.5, 1.6, 1.9, 2.2],
+]

@@ -1,0 +1,5 @@
+venv/
+corpus/
+__pycache__/
+.pytest_cache/
+results/runs/

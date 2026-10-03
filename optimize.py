@@ -1,7 +1,9 @@
 """Simulated annealing over symbol positions (letters and digits stay fixed).
 
 Usage: python optimize.py [--config config.toml] [--set cost.shift=2.5] [--restarts 8] [--iters 200000]
-Writes results/best.json and prints the best layout next to the baselines.
+Writes layouts/<name>/layout.json and prints the best layout next to the baselines. The name defaults
+to the language and base layout ("Python Programmer Dvorak" -> layouts/python-programmer-dvorak/);
+set --name for variants. Then run export.py on that folder.
 """
 import argparse
 import dataclasses
@@ -13,7 +15,7 @@ from pathlib import Path
 import numpy as np
 
 from config import DEFAULT_PATH, load
-from model import Evaluator, Problem, render
+from model import BASE_NAMES, LAYOUTS_DIR, Evaluator, Problem, render, slug
 
 
 def random_pos(problem: Problem, rng: np.random.Generator) -> np.ndarray:
@@ -111,7 +113,8 @@ def main() -> None:
     ap.add_argument("--config", type=Path, default=DEFAULT_PATH)
     ap.add_argument("--set", action="append", default=[], metavar="SECTION.KEY=VALUE",
                     help="override a config value, e.g. --set cost.shift=2.5 (repeatable)")
-    ap.add_argument("--out", type=Path, default=Path("results/best.json"))
+    ap.add_argument("--name", help="layout name; default: language + base layout")
+    ap.add_argument("--dir", type=Path, default=LAYOUTS_DIR, help="where layout folders go")
     ap.add_argument("--restarts", type=int, default=8)
     ap.add_argument("--iters", type=int, default=200_000)
     ap.add_argument("--t0", type=float, default=0.02)
@@ -150,8 +153,11 @@ def main() -> None:
     print(render(layout), "\n")
     print_stats("optimized", ev.stats(best_pos))
 
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps({
+    name = args.name or f"{cfg.language.title()} {BASE_NAMES[cfg.base]}"
+    out = args.dir / slug(name) / "layout.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps({
+        "name": name,
         "cost": best_cost,
         "config": {"language": cfg.language, "base": cfg.base, "digits": cfg.digits,
                    "params": dataclasses.asdict(cfg.params), "overrides": args.set},
@@ -160,7 +166,7 @@ def main() -> None:
         "baselines": {n: ev.stats(p) for n, p in baseline_pos.items()},
         "layout": layout,
     }, indent=1))
-    print(f"\nwrote {args.out}")
+    print(f"\nwrote {out}\nexport it with: python export.py --layout {out.parent}")
 
 
 if __name__ == "__main__":

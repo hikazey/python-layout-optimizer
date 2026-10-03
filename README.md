@@ -121,8 +121,8 @@ Needs Python 3.11+ and numpy.
 python -m venv venv && . venv/bin/activate      # Windows: venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
-python optimize.py                    # uses results/counts.json (included) -> results/best.json
-python export.py                      # -> results/python-optimized.{ahk,kbd,klc,keylayout}
+python optimize.py                    # uses results/counts.json -> layouts/python-programmer-dvorak/layout.json
+python export.py                      # -> the .ahk, .kbd, .klc and .keylayout in that same folder
 pytest
 ```
 
@@ -146,10 +146,10 @@ digit placement, the counting weights, the cost parameters, the bracket rule, an
 fingers and effort. Any value can be overridden for a single run:
 
 ```sh
-python optimize.py --set cost.shift=2.5 --out results/best-shift2.5.json
+python optimize.py --set cost.shift=2.5 --name "Python Programmer Dvorak Costly Shift"
 python optimize.py --set 'layout.base="colemak-dh"' --set 'layout.digits="unshifted"' \
                    --set 'layout.baselines=["colemak-dh"]'
-python optimize.py --set 'brackets.pairs=[]'       # no bracket rule
+python optimize.py --set 'brackets.pairs=[]' --name "Python Programmer Dvorak Unconstrained"
 ```
 
 ### Cost model
@@ -167,7 +167,10 @@ for 12 restarts.
 
 ### Exports
 
-`python export.py [--layout results/best.json | qwerty | python-hand | ...] [--format ...] [--name ...]`
+`python export.py [--layout layouts/<folder> | qwerty | python-hand | ...] [--format ...] [--name ...]`
+
+Each layout gets its own folder in `layouts/`: `optimize.py` writes `layout.json` there (named after the
+language and base layout, or `--name`), and `export.py` writes the four files next to it.
 
 | Format       | Platform    | Notes                                                                                                                                   |
 |--------------|-------------|-----------------------------------------------------------------------------------------------------------------------------------------|

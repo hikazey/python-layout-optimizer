@@ -1,4 +1,5 @@
 {
+ "name": "Python Dvorak",
  "cost": 1.7048862144974761,
  "config": {
   "language": "python",

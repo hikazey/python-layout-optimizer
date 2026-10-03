@@ -1,4 +1,4 @@
-"""Export a layout (results/best.json or a known layout name) as a remapper script or native layout.
+"""Export a layout (a layout folder or a known layout name) as a remapper script or native layout.
 
 Formats:
   ahk        AutoHotkey v2 script (Windows); remaps on top of a QWERTY OS layout
@@ -10,7 +10,10 @@ The remappers keep the standard extras: Right Shift + WASD = arrows, Caps Lock t
 QWERTY, Shift+Caps Lock is Caps Lock, and Ctrl/Alt/Win shortcuts stay on QWERTY positions.
 Native layouts can't do the arrows or the toggle, but keep shortcuts on QWERTY positions too.
 
-Usage: python export.py [--layout results/best.json] [--format all] [--name "Python Optimized"]
+Each layout lives in its own folder, layouts/<name>/, next to its layout.json (written by
+optimize.py); the exports go into that folder as <name>.ahk, .kbd, .klc and .keylayout.
+
+Usage: python export.py [--layout layouts/python-programmer-dvorak | qwerty | ...] [--format all]
 """
 import argparse
 import json
@@ -18,7 +21,7 @@ import re
 import zlib
 from pathlib import Path
 
-from model import LAYOUTS, ROWS, Keyboard
+from model import BASE_NAMES, LAYOUTS, LAYOUTS_DIR, ROWS, Keyboard, slug
 
 KB = Keyboard()
 QWERTY = LAYOUTS["qwerty"]
@@ -412,28 +415,34 @@ FORMATS = {
 }
 
 
-def load_layout(spec: str) -> dict:
+def load_layout(spec: str) -> tuple[dict, str, Path]:
+    """(layout, display name, folder) for a layout folder, its layout.json, or a known layout name."""
     if spec in LAYOUTS:
-        return LAYOUTS[spec]
-    return {k: tuple(v) for k, v in json.loads(Path(spec).read_text())["layout"].items()}
+        name = BASE_NAMES[spec]
+        return LAYOUTS[spec], name, LAYOUTS_DIR / slug(name)
+    path = Path(spec)
+    if path.is_dir():
+        path = path / "layout.json"
+    data = json.loads(path.read_text())
+    name = data.get("name") or path.parent.name.replace("-", " ").title()
+    return {k: tuple(v) for k, v in data["layout"].items()}, name, path.parent
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--layout", default="results/best.json",
-                    help=f"a best.json path or a layout name: {', '.join(LAYOUTS)}")
+    ap.add_argument("--layout", default=str(LAYOUTS_DIR / "python-programmer-dvorak"),
+                    help=f"a layout folder (or its layout.json) or a layout name: {', '.join(LAYOUTS)}")
     ap.add_argument("--format", choices=[*FORMATS, "all"], default="all")
-    ap.add_argument("--name", default="Python Optimized", help="layout name shown by the OS/tooltip")
-    ap.add_argument("--out-dir", type=Path, default=Path("results"))
+    ap.add_argument("--name", help="layout name shown by the OS/tooltip (default: from layout.json)")
     args = ap.parse_args()
 
-    layout = load_layout(args.layout)
-    stem = re.sub(r"[^a-z0-9]+", "-", args.name.lower()).strip("-")
-    args.out_dir.mkdir(parents=True, exist_ok=True)
+    layout, name, folder = load_layout(args.layout)
+    name = args.name or name
+    folder.mkdir(parents=True, exist_ok=True)
     for fmt in FORMATS if args.format == "all" else [args.format]:
         ext, render, encoding = FORMATS[fmt]
-        out = args.out_dir / (stem + ext)
-        text = render(layout, args.name)
+        out = folder / (folder.name + ext)
+        text = render(layout, name)
         if fmt == "klc":
             text = text.replace("\n", "\r\n")
         out.write_text(text, encoding=encoding, newline="")

@@ -9,7 +9,9 @@ Cost of a text = sum over keystrokes of slot effort (+ Shift) + sum over bigrams
 (same-finger bigrams, row jumps, rolls, held Shift) + optionally a trigram cost (redirects).
 Reported per keystroke, plus a flat penalty per bracket pair that isn't placed learnably.
 """
+import re
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import numpy as np
 
@@ -259,6 +261,14 @@ LAYOUTS = {
     }),
 }
 DIGIT_MODES = ("unshifted", "shifted")
+BASE_NAMES = {"qwerty": "QWERTY", "dvorak": "Dvorak", "colemak-dh": "Colemak-DH",
+              "programmer-dvorak": "Programmer Dvorak", "python-hand": "Python Hand"}
+LAYOUTS_DIR = Path("layouts")  # one folder per layout: layout.json + every export
+
+
+def slug(name: str) -> str:
+    """Folder/file name for a layout name: "Python Colemak-DH" -> "python-colemak-dh"."""
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
 @dataclass

@@ -1,8 +1,9 @@
 import html
+import json
 import re
 
-from export import (KANATA_NAMES, LABELS, MAC_CODES, QWERTY, ahk_str, to_ahk, to_kanata, to_keylayout,
-                    to_klc)
+from export import (KANATA_NAMES, LABELS, MAC_CODES, QWERTY, ahk_str, load_layout, to_ahk, to_kanata,
+                    to_keylayout, to_klc)
 from model import LAYOUTS
 
 LAYOUT = LAYOUTS["python-hand"]
@@ -83,3 +84,14 @@ def test_ahk_quotes_awkward_chars():
     for ch in "\"`'":
         assert ahk_str(ch) in text
     assert ahk_str("`") == '"``"'
+
+
+def test_load_layout_reads_folders_and_names(tmp_path):
+    folder = tmp_path / "python-test"
+    folder.mkdir()
+    (folder / "layout.json").write_text(json.dumps({"name": "Python Test", "layout": LAYOUT}))
+    for spec in (folder, folder / "layout.json"):
+        layout, name, out = load_layout(str(spec))
+        assert (layout, name, out) == (LAYOUT, "Python Test", folder)
+    layout, name, out = load_layout("colemak-dh")
+    assert name == "Colemak-DH" and out.name == "colemak-dh"

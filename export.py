@@ -40,6 +40,13 @@ AHK_TEMPLATE = """#Requires AutoHotkey v2.0
 ; - Right Shift + physical WASD = arrow keys (Left Shift/Ctrl still combine:
 ;   RShift+LShift+D selects right, RShift+Ctrl+A jumps a word left).
 ; - Caps Lock toggles back to plain QWERTY (e.g. for games); Shift+Caps Lock is Caps Lock.
+; - Ctrl+Alt+O opens/closes the on-screen keymap (layout-optimizer's overlay.py); each typed key
+;   lights up on it.
+
+; Where overlay.py and this layout's folder are; change both if you move this script out of
+; layout-optimizer/layouts/<name>/.
+overlayDir := A_ScriptDir "\\..\\.."
+overlayLayout := A_ScriptDir
 
 ; physical key (scan code) -> [normal, shifted]
 layout := Map(
@@ -60,16 +67,17 @@ HotIf
 ; Layout typing; yields WASD to the arrows above while Right Shift is held.
 HotIf (hk) => !qwertyMode && !(GetKeyState("RShift", "P") && arrows.Has(LTrim(hk, "+")))
 for sc, chars in layout {{
-    Hotkey sc, TypeKey.Bind(chars, false)
-    Hotkey "+" sc, TypeKey.Bind(chars, true)
+    Hotkey sc, TypeKey.Bind(sc, chars, false)
+    Hotkey "+" sc, TypeKey.Bind(sc, chars, true)
 }}
 HotIf
 
-TypeKey(chars, shifted, *) {{
+TypeKey(sc, chars, shifted, *) {{
     ; Caps Lock flips case for letters only, like a normal layout.
     if IsAlpha(chars[1]) && GetKeyState("CapsLock", "T")
         shifted := !shifted
     SendText(chars[shifted ? 2 : 1])
+    NotifyOverlay({key_msg:#x}, Integer("0x" SubStr(sc, 3)), shifted)
 }}
 
 ; Lift Right Shift around the arrow so it moves instead of selecting.
@@ -79,10 +87,34 @@ CapsLock:: {{
     global qwertyMode := !qwertyMode
     ToolTip qwertyMode ? "QWERTY" : "{name}"
     SetTimer () => ToolTip(), -1000
+    NotifyOverlay({mode_msg:#x}, qwertyMode)
 }}
 
 +CapsLock::SetCapsLockState !GetKeyState("CapsLock", "T")
+
+^!o:: {{
+    if OverlayWindow()
+        return NotifyOverlay({quit_msg:#x})
+    script := overlayDir "\\overlay.py", python := overlayDir "\\venv\\Scripts\\pythonw.exe"
+    if !FileExist(script) {{
+        ToolTip "No overlay.py in " overlayDir
+        return SetTimer(() => ToolTip(), -2000)
+    }}
+    Run '"' (FileExist(python) ? python : "pythonw") '" "' script '" --layout "' overlayLayout '"', overlayDir
+}}
+
+; The overlay listens on a hidden window; posting to it doesn't wait on the overlay.
+OverlayWindow() => DllCall("FindWindow", "Str", "{overlay_class}", "Ptr", 0, "Ptr")
+
+NotifyOverlay(msg, wParam := 0, lParam := 0) {{
+    if hwnd := OverlayWindow()
+        DllCall("PostMessage", "Ptr", hwnd, "UInt", msg, "Ptr", wParam, "Ptr", lParam)
+}}
 """
+# overlay.py listens on a hidden window of this class for these messages (WM_APP + n) from the AHK script:
+# key typed (wParam = scan code, lParam = shifted), Caps Lock QWERTY mode (wParam = on), quit.
+OVERLAY_CLASS = "KeymapOverlay"
+OVERLAY_KEY, OVERLAY_MODE, OVERLAY_QUIT = 0x8001, 0x8002, 0x8003
 
 ROW_NAMES = ["number row", "top row", "home row", "bottom row"]
 
@@ -107,7 +139,8 @@ def to_ahk(layout: dict, name: str) -> str:
         for i in range(0, len(entries), 4):
             last = r == len(ROWS) - 1 and i + 4 >= len(entries)
             lines.append("    " + ", ".join(entries[i:i + 4]) + ("" if last else ","))
-    return AHK_TEMPLATE.format(name=name, rows="\n".join(lines))
+    return AHK_TEMPLATE.format(name=name, rows="\n".join(lines), overlay_class=OVERLAY_CLASS,
+                               key_msg=OVERLAY_KEY, mode_msg=OVERLAY_MODE, quit_msg=OVERLAY_QUIT)
 
 
 # --- kanata -------------------------------------------------------------------------

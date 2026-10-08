@@ -2,8 +2,8 @@ import html
 import json
 import re
 
-from export import (KANATA_NAMES, LABELS, MAC_CODES, QWERTY, ahk_str, load_layout, to_ahk, to_kanata,
-                    to_keylayout, to_klc)
+from export import (KANATA_NAMES, LABELS, MAC_CODES, OVERLAY_CLASS, OVERLAY_KEY, OVERLAY_MODE, QWERTY, ahk_str,
+                    load_layout, to_ahk, to_kanata, to_keylayout, to_klc)
 from model import LAYOUTS
 
 LAYOUT = LAYOUTS["python-hand"]
@@ -84,6 +84,13 @@ def test_ahk_quotes_awkward_chars():
     for ch in "\"`'":
         assert ahk_str(ch) in text
     assert ahk_str("`") == '"``"'
+
+
+def test_ahk_reports_typed_keys_to_overlay():
+    text = to_ahk(LAYOUT, "Test")
+    assert f'"FindWindow", "Str", "{OVERLAY_CLASS}"' in text
+    assert f'NotifyOverlay({OVERLAY_KEY:#x}, Integer("0x" SubStr(sc, 3)), shifted)' in text  # after Caps Lock flip
+    assert f"NotifyOverlay({OVERLAY_MODE:#x}, qwertyMode)" in text
 
 
 def test_load_layout_reads_folders_and_names(tmp_path):

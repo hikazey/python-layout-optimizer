@@ -174,13 +174,18 @@ language and base layout, or `--name`), and `export.py` writes the four files ne
 
 | Format       | Platform    | Notes                                                                                                                                   |
 |--------------|-------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| `.ahk`       | Windows     | AutoHotkey v2. The OS layout stays US QWERTY. Right Shift + WASD = arrows; Caps Lock toggles plain QWERTY; Shift+Caps Lock = Caps Lock. |
+| `.ahk`       | Windows     | AutoHotkey v2. The OS layout stays US QWERTY. Right Shift + WASD = arrows; Caps Lock toggles plain QWERTY; Shift+Caps Lock = Caps Lock; Ctrl+Alt+O opens the overlay. |
 | `.kbd`       | W,mac,Linux | [kanata](https://github.com/jtroo/kanata) config with the same extras as the AHK script.                                                |
 | `.klc`       | Windows     | Source for Microsoft Keyboard Layout Creator, which builds an installable layout.                                                       |
 | `.keylayout` | macOS       | Copy to `~/Library/Keyboard Layouts/`, log out and back in, then add it under Input Sources.                                            |
 
 All four keep Ctrl/Alt/Win (Cmd/Ctrl on macOS) shortcuts on their QWERTY positions. The native
 `.klc` and `.keylayout` layouts can't do the arrow layer or the QWERTY toggle.
+
+`python overlay.py [--layout layouts/<folder>]` shows the layout as an always-on-top, see-through keymap
+(Windows) while you learn it. A small bar above it moves it, sets its opacity, makes it click-through,
+minimizes it and closes it. Each key lights up as you type it. The AHK script reports its keys to the
+overlay, and Ctrl+Alt+O in the script opens and closes the overlay.
 
 ## License
 
